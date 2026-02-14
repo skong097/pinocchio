@@ -38,6 +38,7 @@ from core.llm_client import LLMClient
 from utils.tts_engine import TTSEngine
 from utils.stt_engine import STTWorker
 from utils.logger import SessionLogger
+from utils.radar_chart import RadarChartWidget
 
 # pyqtgraph 지연 로딩
 try:
@@ -300,7 +301,7 @@ class PinocchioApp(QMainWindow):
         widget.setLayout(layout)
         return widget
 
-    # ── 좌하: 그래프 ──
+    # ── 좌하: 그래프 + 레이더 ──
     def _create_graph_panel(self) -> QWidget:
         frame = self._create_panel_frame()
         layout = QVBoxLayout()
@@ -312,6 +313,9 @@ class PinocchioApp(QMainWindow):
             "border: none; background: transparent;"
         )
         layout.addWidget(title)
+
+        # ── 좌우 분할: 시계열 | 레이더 ──
+        h_layout = QHBoxLayout()
 
         if PG_AVAILABLE:
             try:
@@ -340,28 +344,26 @@ class PinocchioApp(QMainWindow):
                     pen=pg.mkPen('#00d4ff', width=2), name='깜빡임/분'
                 )
 
-                layout.addWidget(self.graph_widget)
+                h_layout.addWidget(self.graph_widget, 6)
                 print("[UI] pyqtgraph 그래프 초기화 완료")
             except Exception as e:
                 print(f"[UI] pyqtgraph 초기화 실패: {e}")
-                self._add_graph_placeholder(layout)
+                ph = QLabel("그래프 초기화 실패")
+                ph.setStyleSheet("color: #666; border: none; background: transparent;")
+                h_layout.addWidget(ph, 6)
         else:
-            self._add_graph_placeholder(layout)
+            ph = QLabel("pip install pyqtgraph")
+            ph.setStyleSheet("color: #666; border: none; background: transparent;")
+            ph.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            h_layout.addWidget(ph, 6)
 
+        # 레이더 차트
+        self.radar_chart = RadarChartWidget()
+        h_layout.addWidget(self.radar_chart, 4)
+
+        layout.addLayout(h_layout)
         frame.setLayout(layout)
         return frame
-
-    def _add_graph_placeholder(self, layout):
-        """그래프 사용 불가 시 안내 메시지"""
-        ph = QLabel(
-            "그래프를 표시하려면 pyqtgraph를 설치하세요\n"
-            "pip install pyqtgraph"
-        )
-        ph.setStyleSheet(
-            "color: #666; font-size: 12px; border: none; background: transparent;"
-        )
-        ph.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(ph)
 
     # ── 우하: 대화 로그 ──
     def _create_chat_panel(self) -> QWidget:
@@ -577,9 +579,6 @@ class PinocchioApp(QMainWindow):
             self.ind_speed.set_value("—", "#666666")
 
     def _update_graph(self):
-        if not PG_AVAILABLE:
-            return
-
         # 5프레임마다 업데이트 (부하 절감)
         if not hasattr(self, '_graph_frame_count'):
             self._graph_frame_count = 0
@@ -597,12 +596,36 @@ class PinocchioApp(QMainWindow):
             self._graph_stress = self._graph_stress[-self._max_graph_points:]
             self._graph_blink = self._graph_blink[-self._max_graph_points:]
 
-        self.stress_line.setData(self._graph_time, self._graph_stress)
-        self.blink_line.setData(self._graph_time, self._graph_blink)
+        if PG_AVAILABLE:
+            self.stress_line.setData(self._graph_time, self._graph_stress)
+            self.blink_line.setData(self._graph_time, self._graph_blink)
 
-        # X축 자동 스크롤 (최근 60초 표시)
-        if elapsed > 60:
-            self.graph_widget.setXRange(elapsed - 60, elapsed)
+            # X축 자동 스크롤 (최근 60초 표시)
+            if elapsed > 60:
+                self.graph_widget.setXRange(elapsed - 60, elapsed)
+
+        # ── 레이더 차트 업데이트 (15프레임마다) ──
+        if self._graph_frame_count % 15 == 0:
+            analysis = getattr(self, '_latest_analysis', None)
+            if analysis and analysis.sub_vision:
+                sv = analysis.sub_vision
+                so = analysis.sub_voice
+                radar_values = [
+                    sv.get("iris_instability", 0),
+                    sv.get("blink_rate_change", 0),
+                    sv.get("pupil_dilation", 0),
+                    sv.get("micro_expression", 0),
+                    sv.get("asymmetry", 0),
+                    sv.get("lip_press", 0),
+                    so.get("pitch_change", 0),
+                    so.get("response_latency", 0),
+                    so.get("disfluency", 0),
+                    so.get("jitter_change", 0),
+                    so.get("speech_rate_change", 0),
+                    so.get("volume_change", 0),
+                    analysis.combined_score,
+                ]
+                self.radar_chart.set_values(radar_values)
 
     # ══════════════════════════════════════════
     # 대화 루프

@@ -1,7 +1,7 @@
 """
 피노키오 프로젝트 — STT 엔진
 Google Speech Recognition + WAV 저장 (음성 분석용)
-마이크 장치 자동 검색 (PipeWire) + 에너지 임계값 수동 고정 지원
+마이크 장치 선택 + 에너지 임계값 수동 고정 지원
 """
 import time
 from pathlib import Path
@@ -13,33 +13,6 @@ try:
     SR_AVAILABLE = True
 except ImportError:
     SR_AVAILABLE = False
-
-
-def find_microphone_index() -> int | None:
-    """
-    PipeWire/Pulse 마이크 자동 검색
-    우선순위: pipewire > pulse > default > settings 고정값
-    """
-    if not SR_AVAILABLE:
-        return None
-
-    try:
-        names = sr.Microphone.list_microphone_names()
-    except Exception:
-        return STT.get("microphone_index", None)
-
-    # 우선순위 키워드
-    for keyword in ["pipewire", "pulse", "default"]:
-        for i, name in enumerate(names):
-            if keyword in name.lower():
-                print(f"[STT] 마이크 자동 감지: [{i}] {name}")
-                return i
-
-    # 못 찾으면 settings 값 사용
-    fallback = STT.get("microphone_index", None)
-    if fallback is not None:
-        print(f"[STT] 자동 감지 실패 → settings 값 사용: [{fallback}]")
-    return fallback
 
 
 class STTWorker(QThread):
@@ -72,9 +45,16 @@ class STTWorker(QThread):
             recognizer.dynamic_energy_threshold = False
             print(f"[STT] 에너지 임계값 고정: {recognizer.energy_threshold}")
         
-        # ── 마이크 장치 자동 검색 ──
-        mic_index = find_microphone_index()
+        recognizer.pause_threshold = STT.get("pause_threshold", 1.5)
+
+        # ── 마이크 장치 선택 ──
+        mic_index = STT.get("microphone_index", None)
         mic_kwargs = {"device_index": mic_index} if mic_index is not None else {}
+        
+        if mic_index is not None:
+            print(f"[STT] 마이크 장치 [{mic_index}] 사용")
+        else:
+            print("[STT] 시스템 기본 마이크 사용")
 
         try:
             with sr.Microphone(**mic_kwargs) as source:

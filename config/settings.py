@@ -183,7 +183,7 @@ STT = {
     "timeout": 20,
     "phrase_time_limit": 15,           # 60 → 15 (핵심!)
     "ambient_noise_duration": 0.5,
-    "microphone_index": 10,
+    "microphone_index": 11,
     "energy_threshold": 15000,         # 5000 → 15000 (핵심!)
     "dynamic_energy": False,
     "pause_threshold": 1.0,            # 1.5초 침묵이면 발화 종료
