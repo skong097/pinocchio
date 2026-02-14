@@ -1,0 +1,98 @@
+# ============================================================
+# Home Safe Solution — .gitignore
+# ============================================================
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+*.egg
+dist/
+build/
+*.so
+
+# ===== 가상환경 =====
+venv/
+.venv/
+*_venv/
+env/
+
+# ===== Jupyter =====
+.ipynb_checkpoints/
+*.ipynb
+
+# ===== 모델 파일 (대용량) =====
+*.pth
+*.pkl
+*.pt
+*.onnx
+*.tflite
+
+# ===== 데이터 파일 (대용량) =====
+*.npy
+*.npz
+*.csv
+*.zip
+*.tar.gz
+*.avi
+*.mp4
+*.mkv
+
+# ===== 로그/통계 =====
+*.log
+*.json
+
+# ===== 이미지 (생성된 리포트/시각화) =====
+*.png
+!README.md
+
+# ===== 실험/리포트 디렉토리 =====
+rf_main/experiments/
+rf_main/scripts/admin/Model_Compare_Report/
+rf_main/scripts/admin/logs/
+rf_main/scripts/logs/
+
+# ===== 데이터 디렉토리 =====
+rf_main/new_data/
+rf_main/features_integrated/
+rf_main/skeleton_integrated/
+rf_main/labeled_integrated/
+st_gcn/data/
+st_gcn/skeleton_integrated/
+st_gcn/results/
+
+# ===== 녹화/이벤트 =====
+rf_main/recordings/
+rf_main/events/
+rf_main/accuracy_logs/
+
+# ===== 백업/old 파일 =====
+*.bak
+*.bak2
+*_backup*.py
+rf_main/scripts/old/
+rf_main/scripts/admin/backup_scripts/
+st_gcn/scripts/old/
+
+# ===== 텍스트 리포트 =====
+*.txt
+!requirements.txt
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.code-workspace
+
+# ===== 유틸리티 (배포 불필요) =====
+scan_absolute_paths.py
+scan_result.txt
+fix_paths.py
+gitignore
